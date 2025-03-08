@@ -1,0 +1,68 @@
+table employee_accounts {
+  id integer [primary key]
+  employee_code string
+  username string
+  password string
+  role enum
+  created_at datetime
+  updated_at datetime
+}
+
+table customer_profiles {
+  id integer [primary key]
+  first_name string
+  last_name string
+  email string
+  phone_number string
+  credit_score bigint
+  annual_income decimal
+  is_approved boolean
+  created_at datetime
+  updated_at datetime
+}
+
+table customer_accounts {
+  id integer [primary key]
+  customer_email string
+  customer_password string
+  customer_profile_id integer
+  created_at datetime
+  updated_at datetime
+}
+
+table credit_packages {
+  id integer [primary key]
+  name string
+  interest_rate decimal
+  max_amount decimal
+  min_credit_score integer
+  created_at datetime
+  updated_at datetime
+}
+
+table credit_applications {
+  id integer [primary key]
+  customer_profile_id integer
+  credit_package_id integer
+  amount_requested decimal
+  status enum
+  created_at datetime
+  updated_at datetime
+}
+
+table credit_assessments {
+  id integer [primary key]
+  application_id integer
+  analyst_id integer
+  risk_score integer
+  comments text
+  created_at datetime
+  updated_at datetime
+}
+
+ref: credit_assessments.analyst_id > employee_accounts.id
+ref: customer_accounts.customer_profile_id - customer_profiles.id
+ref: customer_profiles.id < credit_applications.customer_profile_id
+ref: credit_packages.id < credit_applications.credit_package_id
+ref: credit_applications.id - credit_assessments.application_id
+
