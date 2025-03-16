@@ -50,10 +50,10 @@ class EmployeeAccountManager(BaseUserManager):
         user.save(using=self._db)
         return user
     
-    def create_superuser(self, username, role, password=None, **extra_fields):
+    def create_superuser(self, username, password=None, **extra_fields):
+        role = EmployeeAccount.ADMIN
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('role', 'admin')
         extra_fields.setdefault('is_active', True)
 
         if extra_fields.get('is_staff') is not True:
