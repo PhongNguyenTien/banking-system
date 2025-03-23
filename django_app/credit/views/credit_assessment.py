@@ -1,5 +1,4 @@
 from rest_framework import viewsets, status
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from ..models import CreditAssessment
@@ -7,11 +6,11 @@ from ..serializers.credit_assessment import (
     CreditAssessmentSerializer,
     CreditAssessmentCreateSerializer
 )
-from ..permissions import CreditAssessmentPermission
 from accounts.models import EmployeeAccount
+from common.permissions.base_permissions import has_permission
+from credit.rbac import CreditAssessmentPermission
 
 class CreditAssessmentViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated, CreditAssessmentPermission]
     
     def get_queryset(self):
         user = self.request.user
@@ -25,7 +24,29 @@ class CreditAssessmentViewSet(viewsets.ModelViewSet):
         if self.action == 'create':
             return CreditAssessmentCreateSerializer
         return CreditAssessmentSerializer
-        
+    
+    @has_permission(CreditAssessmentPermission('list'))
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+    
+    @has_permission(CreditAssessmentPermission('create'))
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+            
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    @has_permission(CreditAssessmentPermission('retrieve'))
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+    
+    @has_permission(CreditAssessmentPermission('destroy'))
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
+    
+    @has_permission(CreditAssessmentPermission('update'))
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
@@ -59,6 +80,7 @@ class CreditAssessmentViewSet(viewsets.ModelViewSet):
         
         return Response(serializer.data)
         
+    @has_permission(CreditAssessmentPermission('update_status'))
     @action(detail=True, methods=['patch'])
     def update_status(self, request, pk=None):
         """
@@ -77,9 +99,24 @@ class CreditAssessmentViewSet(viewsets.ModelViewSet):
             
         # Get the new status value
         status_value = request.data.get("status")
-        print("<<<<<<<<<<<<<<<<<<<<<<", status_value)
-
+        
+        # Validate that status_value is present
+        if status_value is None:
+            return Response(
+                {"detail": "Status field is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        # Try to convert to integer
+        try:
+            status_value = int(status_value)
+        except (ValueError, TypeError):
+            return Response(
+                {"detail": "Status must be an integer value"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         # Validate the status value
+
         if status_value not in [CreditAssessment.APPROVED, CreditAssessment.REJECTED]:
             return Response(
                 {"detail": f"Status must be either {CreditAssessment.APPROVED} (Approved) or {CreditAssessment.REJECTED} (Rejected)"},

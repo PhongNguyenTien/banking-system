@@ -92,3 +92,11 @@ class EmployeeAccount(AbstractBaseUser, PermissionsMixin):
 
     class Meta:
         db_table = 'employee_accounts'
+        
+ROLES = {
+    "ADMIN": EmployeeAccount.ADMIN,
+    "CREDIT_ANALYST": EmployeeAccount.CREDIT_ANALYST,
+    "CREDIT_MANAGER": EmployeeAccount.CREDIT_MANAGER,
+    "TRANSACTION_OFFICER": EmployeeAccount.TRANSACTION_OFFICER,
+    "AUDIT": EmployeeAccount.AUDIT,
+}
