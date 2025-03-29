@@ -52,12 +52,9 @@ class EmployeeAccountManager(BaseUserManager):
     
     def create_superuser(self, username, password=None, **extra_fields):
         role = EmployeeAccount.ADMIN
-        extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
 
-        if extra_fields.get('is_staff') is not True:
-            raise ValueError('Superuser must have is_staff=True.')
         if extra_fields.get('is_superuser') is not True:
             raise ValueError('Superuser must have is_superuser=True.')
 
@@ -82,7 +79,6 @@ class EmployeeAccount(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=150, unique=True)
     role = models.IntegerField(choices=ROLE_CHOICES)
     is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
