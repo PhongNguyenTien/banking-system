@@ -5,10 +5,12 @@ from .views.customer_account import CustomerLoginView
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views.employee_account import EmployeeAccountViewSet
 from .views.customer_account import CustomerAccountViewSet
+from .views.role import RoleViewSet
 
 router = DefaultRouter()
 router.register(r'employees', EmployeeAccountViewSet, basename='employee')
 router.register(r'customers', CustomerAccountViewSet, basename='customer')
+router.register(r'roles', RoleViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

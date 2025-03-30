@@ -3,6 +3,7 @@ from rest_framework import serializers
 from accounts.serializers.employee_account import EmployeeAccountSerializer
 from ..models import CreditAssessment, CreditApplication
 from accounts.models.employee_account import EmployeeAccount
+from accounts.models.role import Role
 from .credit_application import CreditApplicationSerializer
 
 
@@ -45,11 +46,17 @@ class CreditAssessmentCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("This application already has an assessment")
         return value
     
+    def validate(self, data):
+        request = self.context.get('request')
+        analyst = request.user
+        # Check if the user has Credit Analyst role
+        if not analyst.roles.filter(role__id=Role.CREDIT_ANALYST).exists():
+            raise serializers.ValidationError("Only credit analysts can create assessments")
+        return data
+    
     def create(self, validated_data):
         request = self.context.get('request')
         analyst = request.user
-        if not isinstance(analyst, EmployeeAccount) or analyst.role != EmployeeAccount.CREDIT_ANALYST:
-            raise serializers.ValidationError("Only credit analysts can create assessments")
         application = validated_data.pop('application_id')
         credit_assessment = CreditAssessment.objects.create(
             application=application,

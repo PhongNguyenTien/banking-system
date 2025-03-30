@@ -65,8 +65,7 @@ class EmployeeLoginView(APIView):
                     'user': {
                         'id': user.id,
                         'username': user.username,
-                        'role': user.role,
-                        'employee_code': user.employee_code
+                        'employee_code': user.information.employee_code,
                     }
                 })
             return Response(

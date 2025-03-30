@@ -37,6 +37,7 @@ class CustomerAccountCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomerAccount
         fields = ['password', 'profile_id']
+        extra_kwargs = {'password': {'write_only': True}}
         
     def validate(self, data):
         profile_data = data.get('profile')

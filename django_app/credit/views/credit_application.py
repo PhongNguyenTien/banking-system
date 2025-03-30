@@ -5,16 +5,15 @@ from ..serializers.credit_application import (
     CreditApplicationSerializer,
     CreditApplicationCreateSerializer
 )
-from accounts.models import EmployeeAccount
 from common.permissions.base_permissions import has_permission
 from credit.rbac import CreditApplicationPermission
-
+from accounts.models.role import Role
 
 class CreditApplicationViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user = self.request.user
-        if user.role in [EmployeeAccount.TRANSACTION_OFFICER, EmployeeAccount.CREDIT_ANALYST, EmployeeAccount.CREDIT_MANAGER, EmployeeAccount.AUDIT]:
+        if user.roles.filter(role__id__in=[Role.TRANSACTION_OFFICER, Role.CREDIT_ANALYST, Role.CREDIT_MANAGER, Role.AUDITOR]).exists():
             return CreditApplication.objects.all()
         return CreditApplication.objects.filter(
             customer_profile__account=user
@@ -47,7 +46,7 @@ class CreditApplicationViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
 
         # Credit analysts should not be able to update applications
-        if request.user.role == EmployeeAccount.CREDIT_ANALYST:
+        if request.user.roles.filter(role__id=Role.CREDIT_ANALYST).exists():
             return Response(
                 {"detail": "Credit analysts cannot update applications"},
                 status=status.HTTP_403_FORBIDDEN

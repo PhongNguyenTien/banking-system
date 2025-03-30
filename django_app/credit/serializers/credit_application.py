@@ -2,6 +2,7 @@ from rest_framework import serializers
 from ..models import CreditApplication, CustomerProfile, CreditPackage
 from .customer_profile import CustomerProfileSerializer
 from .credit_package import CreditPackageSerializer
+from accounts.serializers.employee_account import EmployeeAccountSerializer
 
 class CreditApplicationSerializer(serializers.ModelSerializer):
     customer_profile = CustomerProfileSerializer(read_only=True)

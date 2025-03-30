@@ -1,4 +1,4 @@
-from accounts.models.employee_account import ROLES
+from accounts.models.role import ROLES
 from common.permissions.base_permissions import BasePermission
 from rest_framework.exceptions import PermissionDenied
 from accounts.models.employee_account import EmployeeAccount
@@ -66,3 +66,18 @@ class CustomerAccountPermission(BasePermission):
                 raise PermissionDenied("Customers cannot delete their own accounts.")
             
         return False
+
+class RolePermission(BasePermission):
+    PERMISSIONS = {
+        'role': {
+            'create': [ROLES['ADMIN']],
+            'list': [ROLES['ADMIN']],
+            'retrieve': [ROLES['ADMIN']],
+            'update': [ROLES['ADMIN']],
+            'destroy': [ROLES['ADMIN']],
+        },
+    }
+    resource = 'role'
+
+    def __init__(self, action):
+        self.action = action

@@ -1,4 +1,4 @@
-from accounts.models.employee_account import ROLES  # Import ROLES
+from accounts.models.role import ROLES  # Import ROLES
 from common.permissions.base_permissions import BasePermission  # Import the base class
 from rest_framework.exceptions import PermissionDenied
 
@@ -33,8 +33,8 @@ class CreditAssessmentPermission(BasePermission):
     PERMISSIONS = {
         'credit_assessment': {
             'create': [ROLES['CREDIT_ANALYST']],
-            'list': [ROLES['CREDIT_ANALYST'], ROLES['CREDIT_MANAGER'], ROLES['AUDIT']],
-            'retrieve': [ROLES['CREDIT_ANALYST'], ROLES['CREDIT_MANAGER'], ROLES['AUDIT']],
+            'list': [ROLES['CREDIT_ANALYST'], ROLES['CREDIT_MANAGER'], ROLES['AUDITOR']],
+            'retrieve': [ROLES['CREDIT_ANALYST'], ROLES['CREDIT_MANAGER'], ROLES['AUDITOR']],
             'update': [ROLES['CREDIT_ANALYST']],
             'destroy': [ROLES['CREDIT_ANALYST']],
             'update_status': [ROLES['CREDIT_MANAGER']],
@@ -50,8 +50,8 @@ class CreditApplicationPermission(BasePermission):
     PERMISSIONS = {
         'credit_application': {
             'create': [ROLES['TRANSACTION_OFFICER']],
-            'list': [ROLES['TRANSACTION_OFFICER'], ROLES['CREDIT_ANALYST'], ROLES['CREDIT_MANAGER'], ROLES['AUDIT']],
-            'retrieve': [ROLES['TRANSACTION_OFFICER'], ROLES['CREDIT_ANALYST'], ROLES['CREDIT_MANAGER'], ROLES['AUDIT']],
+            'list': [ROLES['TRANSACTION_OFFICER'], ROLES['CREDIT_ANALYST'], ROLES['CREDIT_MANAGER'], ROLES['AUDITOR']],
+            'retrieve': [ROLES['TRANSACTION_OFFICER'], ROLES['CREDIT_ANALYST'], ROLES['CREDIT_MANAGER'], ROLES['AUDITOR']],
             'update': [ROLES['TRANSACTION_OFFICER']],
             'destroy': [ROLES['TRANSACTION_OFFICER']],
         },

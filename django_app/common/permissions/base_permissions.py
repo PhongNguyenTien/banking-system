@@ -14,7 +14,10 @@ class BasePermission:
 
         allowed_roles = self.get_allowed_roles(action)
 
-        if user.role in allowed_roles:
+        # Get user roles properly - user.roles is a related manager, not a direct attribute
+        user_roles = [employee_role.role.id for employee_role in user.roles.all()]
+
+        if set(user_roles).issubset(allowed_roles):
             return True
 
         # Object-level checks (if an object is provided)

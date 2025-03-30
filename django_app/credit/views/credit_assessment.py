@@ -9,14 +9,17 @@ from ..serializers.credit_assessment import (
 from accounts.models import EmployeeAccount
 from common.permissions.base_permissions import has_permission
 from credit.rbac import CreditAssessmentPermission
+from accounts.models.role import Role
 
 class CreditAssessmentViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user = self.request.user
-        if user.role == EmployeeAccount.CREDIT_ANALYST:
+        # Check if user has the Credit Analyst role
+        if user.roles.filter(role__id=Role.CREDIT_ANALYST).exists():
             return CreditAssessment.objects.filter(analyst=user)
-        elif user.role == EmployeeAccount.CREDIT_MANAGER:
+        # Check if user has the Credit Manager role
+        elif user.roles.filter(role__id=Role.CREDIT_MANAGER).exists():
             return CreditAssessment.objects.all()
         return CreditAssessment.objects.none()
 
@@ -53,7 +56,7 @@ class CreditAssessmentViewSet(viewsets.ModelViewSet):
         
         # Prevent status updates through the regular update method
         if 'status' in request.data:
-            if request.user.role == EmployeeAccount.CREDIT_MANAGER:
+            if request.user.roles.filter(role__id=Role.CREDIT_MANAGER).exists():
                 return Response(
                     {"detail": "Credit managers should use the /update_status/ endpoint to update status"},
                     status=status.HTTP_400_BAD_REQUEST
@@ -65,7 +68,7 @@ class CreditAssessmentViewSet(viewsets.ModelViewSet):
                 )
         
         # For credit analysts, allow updating other fields
-        if request.user.role == EmployeeAccount.CREDIT_ANALYST:
+        if request.user.roles.filter(role__id=Role.CREDIT_ANALYST).exists():
             request_data = request.data
         else:
             # Other roles shouldn't be able to update assessments
