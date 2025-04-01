@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.contrib.auth.hashers import make_password, check_password
 from credit.models.customer_profile import CustomerProfile
 
-class CustomerAccountManager(BaseUserManager):
+class CustomerAccountManager(models.Manager):
     def create_user(self, password=None, **extra_fields):
         if not password:
             raise ValueError('Password is required')
@@ -19,14 +19,12 @@ class CustomerAccountManager(BaseUserManager):
         if not extra_fields.get('customer_email'):
             raise ValueError('Email is required (either directly or through customer_profile)')
             
-        user = self.model(
-            customer_email=extra_fields.get('customer_email'),
-            **extra_fields
-        )
-        # Hash the password exactly like AbstractBaseUser does
-        if password:
-            user.password = make_password(password)
-
+        # Create the user instance with all the extra_fields
+        # Don't extract customer_email separately since it's already in extra_fields
+        user = self.model(**extra_fields)
+        
+        # Hash the password
+        user.password = make_password(password)
         user.save(using=self._db)
         return user
 
@@ -50,15 +48,10 @@ class CustomerAccount(models.Model):
         db_table = 'customer_accounts'
         
     def set_password(self, raw_password):
-        """Implement the same method as AbstractBaseUser"""
+        """Set a hashed password"""
         self.password = make_password(raw_password)
-        self._password = raw_password
-        self.save(update_fields=['password'])
+        self.save(update_fields=['password'] if self.pk else None)
     
     def check_password(self, raw_password):
-        """Implement the same method as AbstractBaseUser"""
-        def setter(raw_password):
-            self.set_password(raw_password)
-            self._password = None
-            self.save(update_fields=["password"])
-        return check_password(raw_password, self.password, setter)
+        """Check if the provided password matches the stored hash"""
+        return check_password(raw_password, self.password)

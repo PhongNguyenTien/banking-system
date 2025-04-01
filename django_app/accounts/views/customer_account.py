@@ -53,25 +53,31 @@ class CustomerLoginView(APIView):
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            user = authenticate(
-                username=serializer.validated_data['email'],
-                password=serializer.validated_data['password']
-            )
+            email = serializer.validated_data['email']
+            password = serializer.validated_data['password']
             
-            if user and user.is_active:
-                refresh = RefreshToken.for_user(user)
-                return Response({
-                    'refresh': str(refresh),
-                    'access': str(refresh.access_token),
-                    'user': {
-                        'id': user.id,
-                        'email': user.customer_email,
-                        'profile': {
-                            'first_name': user.customer_profile.first_name,
-                            'last_name': user.customer_profile.last_name
+            try:
+                # Find the customer by email
+                customer = CustomerAccount.objects.get(customer_email=email)
+                
+                # Use check_password to verify
+                if customer.check_password(password) and customer.is_active:
+                    refresh = RefreshToken.for_user(customer)
+                    return Response({
+                        'refresh': str(refresh),
+                        'access': str(refresh.access_token),
+                        'user': {
+                            'id': customer.id,
+                            'email': customer.customer_email,
+                            'profile': {
+                                'first_name': customer.customer_profile.first_name,
+                                'last_name': customer.customer_profile.last_name
+                            }
                         }
-                    }
-                })
+                    })
+            except CustomerAccount.DoesNotExist:
+                pass
+            
             return Response(
                 {'error': 'Invalid credentials'}, 
                 status=status.HTTP_401_UNAUTHORIZED
