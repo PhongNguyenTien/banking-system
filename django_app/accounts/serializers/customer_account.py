@@ -50,7 +50,7 @@ class CustomerAccountCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         profile_data = validated_data.pop('profile', None)
-        password = validated_data.pop('password')  # Extract password
+        password = validated_data.pop('password')
         
         if profile_data:
             profile = CustomerProfile.objects.create(**profile_data)
@@ -60,8 +60,8 @@ class CustomerAccountCreateSerializer(serializers.ModelSerializer):
         
         if 'customer_email' not in validated_data or not validated_data['customer_email']:
             validated_data['customer_email'] = profile.email
+        print(">>>> validated_data: ", validated_data)
         
-        # Use create_user to ensure password hashing
         return CustomerAccount.objects.create_user(
             password=password,
             **validated_data

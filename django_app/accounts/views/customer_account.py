@@ -57,21 +57,18 @@ class CustomerLoginView(APIView):
             password = serializer.validated_data['password']
             
             try:
-                # Find the customer by email
-                customer = CustomerAccount.objects.get(customer_email=email)
-                
-                # Use check_password to verify
-                if customer.check_password(password) and customer.is_active:
-                    refresh = RefreshToken.for_user(customer)
+                user = CustomerAccount.objects.get(customer_email=email)
+                if user.check_password(password) and user.is_active:
+                    refresh = RefreshToken.for_user(user)
                     return Response({
                         'refresh': str(refresh),
                         'access': str(refresh.access_token),
                         'user': {
-                            'id': customer.id,
-                            'email': customer.customer_email,
+                            'id': user.id,
+                            'email': user.customer_email,
                             'profile': {
-                                'first_name': customer.customer_profile.first_name,
-                                'last_name': customer.customer_profile.last_name
+                                'first_name': user.customer_profile.first_name,
+                                'last_name': user.customer_profile.last_name
                             }
                         }
                     })

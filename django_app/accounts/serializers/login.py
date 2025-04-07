@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from accounts.models.employee_account import EmployeeAccount
-from accounts.models.role import Role
+
 
 
 class EmployeeLoginSerializer(serializers.Serializer):

@@ -1,6 +1,7 @@
 from accounts.models.role import ROLES  # Import ROLES
 from common.permissions.base_permissions import BasePermission  # Import the base class
 from rest_framework.exceptions import PermissionDenied
+from accounts.models.employee_account import EmployeeAccount
 
 class CustomerProfilePermission(BasePermission):
     PERMISSIONS = {
@@ -44,6 +45,17 @@ class CreditAssessmentPermission(BasePermission):
 
     def __init__(self, action):
         self.action = action
+        
+    def check_object_permission(self, request, action, obj):
+        user = request.user
+        
+        if isinstance(user, EmployeeAccount) and user.id == obj.analyst.id:
+            if action in ['retrieve', 'update']:
+                return True
+            if action == 'destroy':
+                raise PermissionDenied("Credit analysts cannot delete their own assessments.")
+                
+        return False
 
 
 class CreditApplicationPermission(BasePermission):
