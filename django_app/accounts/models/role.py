@@ -7,6 +7,7 @@ class Role(models.Model):
     CREDIT_MANAGER = 3
     TRANSACTION_OFFICER = 4
     AUDITOR = 5
+    CUSTOMER = 6
     
     ROLE_CHOICES = [
         (ADMIN, 'Admin'),
@@ -14,6 +15,7 @@ class Role(models.Model):
         (CREDIT_MANAGER, 'Credit Manager'),
         (TRANSACTION_OFFICER, 'Transaction Officer'),
         (AUDITOR, 'Audit'),
+        (CUSTOMER, 'Customer'),
     ]
     
     name = models.CharField(max_length=50)
@@ -32,4 +34,5 @@ ROLES = {
     "CREDIT_MANAGER": Role.CREDIT_MANAGER,
     "TRANSACTION_OFFICER": Role.TRANSACTION_OFFICER,
     "AUDITOR": Role.AUDITOR,
+    "CUSTOMER": Role.CUSTOMER,
 } 

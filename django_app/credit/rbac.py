@@ -8,7 +8,7 @@ class CustomerProfilePermission(BasePermission):
         'customer_profile': {
             'create': [ROLES['TRANSACTION_OFFICER']],
             'list': [ROLES['TRANSACTION_OFFICER']],
-            'retrieve': [ROLES['TRANSACTION_OFFICER'], ROLES['CREDIT_ANALYST']],
+            'retrieve': [ROLES['TRANSACTION_OFFICER'], ROLES['CREDIT_ANALYST'], ROLES['CUSTOMER']],
             'update': [ROLES['TRANSACTION_OFFICER']],
             'destroy': [ROLES['TRANSACTION_OFFICER']],
         },

@@ -56,25 +56,27 @@ class CustomerLoginView(APIView):
             email = serializer.validated_data['email']
             password = serializer.validated_data['password']
             
-            try:
-                user = CustomerAccount.objects.get(customer_email=email)
-                if user.check_password(password) and user.is_active:
-                    refresh = RefreshToken.for_user(user)
-                    return Response({
-                        'refresh': str(refresh),
-                        'access': str(refresh.access_token),
-                        'user': {
-                            'id': user.id,
-                            'email': user.customer_email,
-                            'profile': {
-                                'first_name': user.customer_profile.first_name,
-                                'last_name': user.customer_profile.last_name
-                            }
+            user = authenticate(
+                username=email,
+                password=password
+            )
+            if user and user.is_active:
+                refresh = RefreshToken.for_user(user)
+                refresh['role'] = 'CUSTOMER'
+                return Response({
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token),
+                    'user': {
+                        'id': user.id,
+                        'email': user.customer_email,
+                        'role': 'CUSTOMER',
+                        'profile': {
+                            'first_name': user.customer_profile.first_name,
+                            'last_name': user.customer_profile.last_name
                         }
-                    })
-            except CustomerAccount.DoesNotExist:
-                pass
-            
+                    }
+                })
+        
             return Response(
                 {'error': 'Invalid credentials'}, 
                 status=status.HTTP_401_UNAUTHORIZED

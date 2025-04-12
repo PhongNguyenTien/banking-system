@@ -1,6 +1,8 @@
 from functools import wraps
 from rest_framework.exceptions import PermissionDenied
 
+from accounts.models.role import ROLES
+from accounts.models.customer_account import CustomerAccount
 class BasePermission:
     """Base class for permission checking."""
     PERMISSIONS = NotImplemented
@@ -11,8 +13,16 @@ class BasePermission:
 
         if not user.is_authenticated:
             raise PermissionDenied("Authentication required.")
-
+        
         allowed_roles = self.get_allowed_roles(action)
+        
+        if isinstance(user, CustomerAccount):
+            if obj:
+                return self.check_object_permission(request, action, obj)
+            if ROLES['CUSTOMER'] in allowed_roles:
+                return True
+            return False
+
 
         # Get user roles properly - user.roles is a related manager, not a direct attribute
         user_roles = [employee_role.role.id for employee_role in user.roles.all()]
