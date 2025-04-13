@@ -7,11 +7,23 @@ from accounts.models.customer_account import CustomerAccount
 class EmployeeAccountPermission(BasePermission):
     PERMISSIONS = {
         'employee_account': {
-            'create': [ROLES['ADMIN']],
-            'list': [ROLES['ADMIN']],
-            'retrieve': [ROLES['ADMIN']],
-            'update': [ROLES['ADMIN']],
-            'destroy': [ROLES['ADMIN']],
+            'create': {
+                'roles': [ROLES['ADMIN']],
+            },
+            'list': {
+                'roles': [ROLES['ADMIN']],
+            },
+            'retrieve': {
+                'roles': [ROLES['ADMIN'], ROLES['TRANSACTION_OFFICER'], ROLES['CREDIT_ANALYST'], ROLES['CREDIT_MANAGER'], ROLES['AUDITOR']],
+                'object_permission': 'is_owner',
+            },
+            'update': {
+                'roles': [ROLES['ADMIN'], ROLES['TRANSACTION_OFFICER'], ROLES['CREDIT_ANALYST'], ROLES['CREDIT_MANAGER'], ROLES['AUDITOR']],
+                'object_permission': ['is_owner', 'can_update_only_username_and_password'],
+            },
+            'destroy': {
+                'roles': [ROLES['ADMIN']]
+            },
         },
     }
     resource = 'employee_account'
@@ -19,31 +31,43 @@ class EmployeeAccountPermission(BasePermission):
     def __init__(self, action):
         self.action = action
         
-    def check_object_permission(self, request, action, obj):
-        user = request.user
+    def is_owner(self, request, obj):
+        print("request.user", request.user.id)
+        print("obj", obj.id)
+        if isinstance(request.user, EmployeeAccount) and request.user.id == obj.id:
+            return True
+        raise PermissionDenied("You can only access your own account")
+    
+    def can_update_only_username_and_password(self, request, obj):
+        if request.method == 'PUT' or request.method == 'PATCH':
+            return request.data and set(request.data.keys()).issubset({'username', 'password'})
+        raise PermissionDenied("You can only update the username and password")
         
-        if isinstance(user, EmployeeAccount) and user.id == obj.id:
-            if action == 'retrieve':
-                return True
-            if action == 'update':
-                allowed_fields = {'username', 'password'}
-                if request.data and set(request.data.keys()).issubset(allowed_fields):
-                    return True
-                raise PermissionDenied("You can only update username and password.")
-            if action == 'destroy':
-                raise PermissionDenied("Employees cannot delete their own accounts.")
-
-        return False
+    def check_object_permission(self, request, action, obj, permission_type):
+        has_permission = super().check_object_permission(request, action, obj, permission_type)
+        return has_permission
 
 
 class CustomerAccountPermission(BasePermission):
     PERMISSIONS = {
         'customer_account': {
-            'create': [ROLES['ADMIN']],
-            'list': [ROLES['ADMIN'], ROLES['TRANSACTION_OFFICER']],
-            'retrieve': [ROLES['ADMIN'], ROLES['TRANSACTION_OFFICER']],
-            'update': [ROLES['ADMIN'], ROLES['TRANSACTION_OFFICER']],
-            'destroy': [ROLES['ADMIN']],
+            'create': {
+                'roles': [ROLES['CUSTOMER']],
+            },
+            'list': {
+                'roles': [ROLES['ADMIN']],
+            },
+            'retrieve': {
+                'roles': [ROLES['CUSTOMER']],
+                'object_permission': 'is_owner',
+            },
+            'update': {
+                'roles': [ROLES['CUSTOMER']],
+                'object_permission': ['is_owner', 'can_update_only_email_and_password'],
+            },
+            'destroy': {
+                'roles': [ROLES['ADMIN']],
+            },
         },
     }
     resource = 'customer_account'
@@ -51,33 +75,57 @@ class CustomerAccountPermission(BasePermission):
     def __init__(self, action):
         self.action = action
 
-    def check_object_permission(self, request, action, obj):
-        user = request.user
+    def is_owner(self, request, obj):
+        """Check if user is the owner of this account."""
+        if isinstance(request.user, CustomerAccount) and request.user.id == obj.id:
+            return True
+        raise PermissionDenied("You can only access your own account")
+    
+    def can_update_only_email_and_password(self, request, obj):
+        if request.method == 'PUT' or request.method == 'PATCH':
+            return request.data and set(request.data.keys()).issubset({'customer_email', 'password'})
+        raise PermissionDenied("You can only update the email and password")
         
-        if isinstance(user, CustomerAccount) and user.id == obj.id:
-            if action == 'retrieve':
-                return True
-            if action == 'update':
-                allowed_fields = {'customer_email', 'password'}
-                if request.data and set(request.data.keys()).issubset(allowed_fields):
-                    return True
-                raise PermissionDenied("You can only update email and password")
-            if action == 'destroy':
-                raise PermissionDenied("Customers cannot delete their own accounts.")
-            
-        return False
+    def check_object_permission(self, request, action, obj, permission_type):
+        """Custom object permission checks."""
+        # First check standard permissions
+        has_permission = super().check_object_permission(request, action, obj, permission_type)
+        return has_permission
 
 class RolePermission(BasePermission):
     PERMISSIONS = {
         'role': {
-            'create': [ROLES['ADMIN']],
-            'list': [ROLES['ADMIN']],
-            'retrieve': [ROLES['ADMIN']],
-            'update': [ROLES['ADMIN']],
-            'destroy': [ROLES['ADMIN']],
+            'create': {
+                'roles': [ROLES['ADMIN']],
+            },
+            'list': {
+                'roles': [ROLES['ADMIN']],
+            },
+            'retrieve': {
+                'roles': [ROLES['ADMIN']],
+            },
+            'update': {
+                'roles': [ROLES['ADMIN']],
+            },
+            'destroy': {
+                'roles': [ROLES['ADMIN']],
+            },
         },
     }
     resource = 'role'
+
+    def __init__(self, action):
+        self.action = action
+
+class RoleAssignmentPermission(BasePermission):
+    PERMISSIONS = {
+        'role_assignment': {
+            'assign': {
+                'roles': [ROLES['ADMIN']],
+            },
+        },
+    }
+    resource = 'role_assignment'
 
     def __init__(self, action):
         self.action = action

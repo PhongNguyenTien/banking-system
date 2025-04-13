@@ -30,7 +30,7 @@ class CustomerAccountManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-class CustomerAccount(models.Model):
+class CustomerAccount(AbstractBaseUser):
     customer_email = models.EmailField(unique=True)
     password = models.CharField(max_length=128)
     customer_profile = models.OneToOneField(
@@ -41,7 +41,10 @@ class CustomerAccount(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    
+    # Add this line to satisfy Django's requirements without a migration:
+    last_login = None  # This overrides the field from AbstractBaseUser
+    
     objects = CustomerAccountManager()
 
     USERNAME_FIELD = 'customer_email'
@@ -62,3 +65,15 @@ class CustomerAccount(models.Model):
             self._password = None
             self.save(update_fields=["password"])
         return check_password(raw_password, self.password, setter)
+
+    # You'll also need these for Django auth compatibility
+    def get_username(self):
+        return self.customer_email
+        
+    @property
+    def is_anonymous(self):
+        return False
+        
+    @property
+    def is_authenticated(self):
+        return True

@@ -56,26 +56,37 @@ class CustomerLoginView(APIView):
             email = serializer.validated_data['email']
             password = serializer.validated_data['password']
             
-            user = authenticate(
-                username=email,
-                password=password
-            )
-            if user and user.is_active:
-                refresh = RefreshToken.for_user(user)
-                refresh['role'] = 'CUSTOMER'
-                return Response({
-                    'refresh': str(refresh),
-                    'access': str(refresh.access_token),
-                    'user': {
-                        'id': user.id,
-                        'email': user.customer_email,
-                        'role': 'CUSTOMER',
-                        'profile': {
-                            'first_name': user.customer_profile.first_name,
-                            'last_name': user.customer_profile.last_name
+            try:
+                user = CustomerAccount.objects.get(customer_email=email)
+                if user.check_password(password) and user.is_active:
+                    # Debug info
+                    print("Type of user before token generation:", type(user))
+                    print("User ID before token generation:", user.id)
+                    
+                    # Create token
+                    refresh = RefreshToken.for_user(user)
+                    
+                    # Add user type to token payload
+                    refresh['user_type'] = 'customer'
+                    
+                    # Debug token payload
+                    print("Token payload:", refresh.payload)
+                    
+                    return Response({
+                        'refresh': str(refresh),
+                        'access': str(refresh.access_token),
+                        'user': {
+                            'id': user.id,
+                            'email': user.customer_email,
+                            'type': 'customer',
+                            'profile': {
+                                'first_name': user.customer_profile.first_name,
+                                'last_name': user.customer_profile.last_name
+                            }
                         }
-                    }
-                })
+                    })
+            except CustomerAccount.DoesNotExist:
+                pass
         
             return Response(
                 {'error': 'Invalid credentials'}, 
