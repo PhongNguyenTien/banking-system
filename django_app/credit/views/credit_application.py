@@ -5,11 +5,11 @@ from ..serializers.credit_application import (
     CreditApplicationSerializer,
     CreditApplicationCreateSerializer
 )
-from common.permissions.base_permissions import has_permission
 from credit.rbac import CreditApplicationPermission
 from accounts.models.role import Role
 
 class CreditApplicationViewSet(viewsets.ModelViewSet):
+    permission_classes = []
     
     def get_queryset(self):
         user = self.request.user
@@ -23,34 +23,10 @@ class CreditApplicationViewSet(viewsets.ModelViewSet):
         if self.action == 'create':
             return CreditApplicationCreateSerializer
         return CreditApplicationSerializer
-    
-    @has_permission(CreditApplicationPermission('list'))
-    def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
-    
-    @has_permission(CreditApplicationPermission('create'))
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-    
-    @has_permission(CreditApplicationPermission('retrieve'))
-    def retrieve(self, request, *args, **kwargs):
-        return super().retrieve(request, *args, **kwargs)
-    
-    @has_permission(CreditApplicationPermission('update'))
+
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
-
-        # Credit analysts should not be able to update applications
-        if request.user.roles.filter(role__id=Role.CREDIT_ANALYST).exists():
-            return Response(
-                {"detail": "Credit analysts cannot update applications"},
-                status=status.HTTP_403_FORBIDDEN
-            )
 
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
@@ -58,9 +34,3 @@ class CreditApplicationViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.data)
     
-    @has_permission(CreditApplicationPermission('destroy'))
-    def destroy(self, request, *args, **kwargs):
-        return super().destroy(request, *args, **kwargs)
-    
-    
-        

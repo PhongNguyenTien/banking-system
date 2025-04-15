@@ -1,9 +1,11 @@
-from accounts.models.role import ROLES  # Import ROLES
-from common.permissions.base_permissions import BasePermission  # Import the base class
+from accounts.models.role import ROLES  # Import ROLES # Import the base class
 from rest_framework.exceptions import PermissionDenied
 from accounts.models.employee_account import EmployeeAccount
 from accounts.models.customer_account import CustomerAccount
-class CustomerProfilePermission(BasePermission):
+from common.permissions.base_permissions import RBACPermission
+
+
+class CustomerProfilePermission(RBACPermission):
     PERMISSIONS = {
         'customer_profile': {
             'create': {
@@ -16,7 +18,7 @@ class CustomerProfilePermission(BasePermission):
                 'roles': [ROLES['CUSTOMER']],
                 'object_permission': 'is_owner',
             },
-            'update': {
+            'partial_update': {
                 'roles': [ROLES['CUSTOMER']],
                 'object_permission': ['is_owner', 'can_update_only_email_and_password'],
             },
@@ -27,8 +29,8 @@ class CustomerProfilePermission(BasePermission):
     }
     resource = 'customer_profile'
 
-    def __init__(self, action):
-        self.action = action
+    # def __init__(self, action):
+    #     self.action = action
         
     def is_owner(self, request, obj):
         if isinstance(request.user, CustomerAccount) and obj.id == request.user.customer_profile.id:
@@ -39,14 +41,13 @@ class CustomerProfilePermission(BasePermission):
         if request.method == 'PUT' or request.method == 'PATCH':
             return request.data and set(request.data.keys()).issubset({'customer_email', 'password'})
         raise PermissionDenied("You can only update the email and password")
-
         
-    def check_object_permission(self, request, action, obj, permission_type):
-        has_permission = super().check_object_permission(request, action, obj, permission_type)
-        return has_permission
+    # def check_object_permission(self, request, action, obj, permission_type):
+    #     has_permission = super().check_object_permission(request, action, obj, permission_type)
+    #     return has_permission
 
 
-class CreditAssessmentPermission(BasePermission):
+class CreditAssessmentPermission(RBACPermission):
     PERMISSIONS = {
         'credit_assessment': {
             'create': {
@@ -56,10 +57,10 @@ class CreditAssessmentPermission(BasePermission):
                 'roles': [ROLES['CREDIT_MANAGER'], ROLES['AUDITOR']],
             },
             'retrieve': {
-                'roles': [ROLES['CREDIT_ANALYST'], ROLES['CREDIT_MANAGER'], ROLES['AUDITOR'], ROLES['CUSTOMER']],
-                'object_permission': ['is_owner', 'is_creator', 'is_credit_manager', 'is_auditor'],
+                'roles': [ROLES['CREDIT_ANALYST'], ROLES['CREDIT_MANAGER']],
+                'object_permission': ['is_creator_or_credit_manager'],
             },
-            'update': {
+            'partial_update': {
                 'roles': [ROLES['CREDIT_ANALYST']],
                 'object_permission': ['is_creator', 'can_update_only_risk_score_and_comments'],
             },
@@ -74,18 +75,18 @@ class CreditAssessmentPermission(BasePermission):
     }
     resource = 'credit_assessment'
 
-    def __init__(self, action):
-        self.action = action
+    # def __init__(self, action):
+    #     self.action = action
         
     def is_creator(self, request, obj):
         if isinstance(request.user, EmployeeAccount) and request.user.roles.filter(role__id=ROLES['CREDIT_ANALYST']).exists() and request.user.id == obj.analyst.id:
             return True
         raise PermissionDenied("You can only access the credit assessment created by you")
     
-    def is_owner(self, request, obj):
-        if isinstance(request.user, CustomerAccount) and obj.application.customer_profile.id == request.user.customer_profile.id:
+    def is_creator_or_credit_manager(self, request, obj):
+        if (isinstance(request.user, EmployeeAccount) and request.user.roles.filter(role__id=ROLES['CREDIT_ANALYST']).exists() and request.user.id == obj.analyst.id) or (isinstance(request.user, EmployeeAccount) and request.user.roles.filter(role__id=ROLES['CREDIT_MANAGER']).exists()):
             return True
-        raise PermissionDenied("You can only access the credit assessment of your application")
+        raise PermissionDenied("Only creators or credit managers can access this credit assessment")
     
     def is_credit_manager(self, request, obj):
         if isinstance(request.user, EmployeeAccount) and request.user.roles.filter(role__id=ROLES['CREDIT_MANAGER']).exists():
@@ -102,12 +103,12 @@ class CreditAssessmentPermission(BasePermission):
             return request.data and set(request.data.keys()).issubset({'risk_score', 'comments'})
         raise PermissionDenied("You can only update the risk score and comments")
         
-    def check_object_permission(self, request, action, obj, permission_type):
-        has_permission = super().check_object_permission(request, action, obj, permission_type)
-        return has_permission
+    # def check_object_permission(self, request, action, obj, permission_type):
+    #     has_permission = super().check_object_permission(request, action, obj, permission_type)
+    #     return has_permission
 
 
-class CreditApplicationPermission(BasePermission):
+class CreditApplicationPermission(RBACPermission):
     PERMISSIONS = {
         'credit_application': {
             'create': {
@@ -123,6 +124,9 @@ class CreditApplicationPermission(BasePermission):
             'update': {
                 'roles': [ROLES['TRANSACTION_OFFICER']],
             },
+            'partial_update': {
+                'roles': [ROLES['TRANSACTION_OFFICER']],
+            },
             'destroy': {
                 'roles': [ROLES['TRANSACTION_OFFICER']],
             },
@@ -130,32 +134,35 @@ class CreditApplicationPermission(BasePermission):
     }
     resource = 'credit_application'
     
-    def __init__(self, action):
-        self.action = action
+    # def __init__(self, action):
+    #     self.action = action
     
     def is_owner(self, request, obj):
         if isinstance(request.user, CustomerAccount) and obj.customer_profile.id == request.user.customer_profile.id:
             return True
         raise PermissionDenied("You can only access the credit application of your profile")
     
-    def check_object_permission(self, request, action, obj, permission_type):
-        has_permission = super().check_object_permission(request, action, obj, permission_type)
-        return has_permission
+    # def check_object_permission(self, request, action, obj, permission_type):
+    #     has_permission = super().check_object_permission(request, action, obj, permission_type)
+    #     return has_permission
     
 
-class CreditPackagePermission(BasePermission):
+class CreditPackagePermission(RBACPermission):
     PERMISSIONS = {
         'credit_package': {
             'create': {
                 'roles': [ROLES['ADMIN']],
             },
             'list': {
-                'roles': [ROLES['ADMIN']],
+                'roles': [ROLES['ADMIN'], ROLES['TRANSACTION_OFFICER'], ROLES['CREDIT_ANALYST'], ROLES['CREDIT_MANAGER'], ROLES['AUDITOR'], ROLES['CUSTOMER']],
             },
             'retrieve': {
                 'roles': [ROLES['ADMIN']],
             },
             'update': {
+                'roles': [ROLES['ADMIN']],
+            },
+            'partial_update': {
                 'roles': [ROLES['ADMIN']],
             },
             'destroy': {
@@ -165,5 +172,5 @@ class CreditPackagePermission(BasePermission):
     }
     resource = 'credit_package'
 
-    def __init__(self, action):
-        self.action = action
+    # def __init__(self, action):
+    #     self.action = action

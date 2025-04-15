@@ -7,38 +7,38 @@ from django.contrib.auth import authenticate
 
 from ..serializers.customer_account import CustomerAccountCreateSerializer, CustomerAccountSerializer
 from ..serializers.login import CustomerLoginSerializer
-from common.permissions.base_permissions import has_permission
 from accounts.rbac import CustomerAccountPermission
 
 class CustomerAccountViewSet(viewsets.ModelViewSet):
     queryset = CustomerAccount.objects.all()
+    permission_classes = [CustomerAccountPermission]
     
     def get_serializer_class(self):
         if self.action == 'create':
             return CustomerAccountCreateSerializer
         return CustomerAccountSerializer
     
-    @has_permission(CustomerAccountPermission('list'))
-    def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
+    # @has_permission(CustomerAccountPermission('list'))
+    # def list(self, request, *args, **kwargs):
+    #     return super().list(request, *args, **kwargs)
 
-    @has_permission(CustomerAccountPermission('create'))
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    # @has_permission(CustomerAccountPermission('create'))
+    # def create(self, request, *args, **kwargs):
+    #     serializer = self.get_serializer(data=request.data)
+    #     serializer.is_valid(raise_exception=True)
+    #     self.perform_create(serializer)
+    #     headers = self.get_success_headers(serializer.data)
+    #     return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-    @has_permission(CustomerAccountPermission('retrieve'))
-    def retrieve(self, request, *args, **kwargs):
-        return super().retrieve(request, *args, **kwargs)
+    # @has_permission(CustomerAccountPermission('retrieve'))
+    # def retrieve(self, request, *args, **kwargs):
+    #     return super().retrieve(request, *args, **kwargs)
 
-    @has_permission(CustomerAccountPermission('update'))
-    def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
+    # @has_permission(CustomerAccountPermission('update'))
+    # def update(self, request, *args, **kwargs):
+    #     return super().update(request, *args, **kwargs)
     
-    @has_permission(CustomerAccountPermission('destroy'))
+    # @has_permission(CustomerAccountPermission('destroy'))
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.is_active = False

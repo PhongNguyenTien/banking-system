@@ -1,10 +1,11 @@
 from accounts.models.role import ROLES
-from common.permissions.base_permissions import BasePermission
 from rest_framework.exceptions import PermissionDenied
 from accounts.models.employee_account import EmployeeAccount
 from accounts.models.customer_account import CustomerAccount
+from common.permissions.base_permissions import RBACPermission
 
-class EmployeeAccountPermission(BasePermission):
+
+class EmployeeAccountPermission(RBACPermission):
     PERMISSIONS = {
         'employee_account': {
             'create': {
@@ -17,7 +18,7 @@ class EmployeeAccountPermission(BasePermission):
                 'roles': [ROLES['ADMIN'], ROLES['TRANSACTION_OFFICER'], ROLES['CREDIT_ANALYST'], ROLES['CREDIT_MANAGER'], ROLES['AUDITOR']],
                 'object_permission': 'is_owner',
             },
-            'update': {
+            'partial_update': {
                 'roles': [ROLES['ADMIN'], ROLES['TRANSACTION_OFFICER'], ROLES['CREDIT_ANALYST'], ROLES['CREDIT_MANAGER'], ROLES['AUDITOR']],
                 'object_permission': ['is_owner', 'can_update_only_username_and_password'],
             },
@@ -28,8 +29,8 @@ class EmployeeAccountPermission(BasePermission):
     }
     resource = 'employee_account'
 
-    def __init__(self, action):
-        self.action = action
+    # def __init__(self, action):
+    #     self.action = action
         
     def is_owner(self, request, obj):
         print("request.user", request.user.id)
@@ -43,12 +44,12 @@ class EmployeeAccountPermission(BasePermission):
             return request.data and set(request.data.keys()).issubset({'username', 'password'})
         raise PermissionDenied("You can only update the username and password")
         
-    def check_object_permission(self, request, action, obj, permission_type):
-        has_permission = super().check_object_permission(request, action, obj, permission_type)
-        return has_permission
+    # def check_object_permission(self, request, action, obj, permission_type):
+    #     has_permission = super().check_object_permission(request, action, obj, permission_type)
+    #     return has_permission
 
 
-class CustomerAccountPermission(BasePermission):
+class CustomerAccountPermission(RBACPermission):
     PERMISSIONS = {
         'customer_account': {
             'create': {
@@ -61,7 +62,7 @@ class CustomerAccountPermission(BasePermission):
                 'roles': [ROLES['CUSTOMER']],
                 'object_permission': 'is_owner',
             },
-            'update': {
+            'partial_update': {
                 'roles': [ROLES['CUSTOMER']],
                 'object_permission': ['is_owner', 'can_update_only_email_and_password'],
             },
@@ -72,8 +73,8 @@ class CustomerAccountPermission(BasePermission):
     }
     resource = 'customer_account'
 
-    def __init__(self, action):
-        self.action = action
+    # def __init__(self, action):
+    #     self.action = action
 
     def is_owner(self, request, obj):
         """Check if user is the owner of this account."""
@@ -86,13 +87,13 @@ class CustomerAccountPermission(BasePermission):
             return request.data and set(request.data.keys()).issubset({'customer_email', 'password'})
         raise PermissionDenied("You can only update the email and password")
         
-    def check_object_permission(self, request, action, obj, permission_type):
-        """Custom object permission checks."""
-        # First check standard permissions
-        has_permission = super().check_object_permission(request, action, obj, permission_type)
-        return has_permission
+    # def check_object_permission(self, request, action, obj, permission_type):
+    #     """Custom object permission checks."""
+    #     # First check standard permissions
+    #     has_permission = super().check_object_permission(request, action, obj, permission_type)
+    #     return has_permission
 
-class RolePermission(BasePermission):
+class RolePermission(RBACPermission):
     PERMISSIONS = {
         'role': {
             'create': {
@@ -107,6 +108,9 @@ class RolePermission(BasePermission):
             'update': {
                 'roles': [ROLES['ADMIN']],
             },
+            'partial_update': {
+                'roles': [ROLES['ADMIN']],
+            },
             'destroy': {
                 'roles': [ROLES['ADMIN']],
             },
@@ -114,10 +118,10 @@ class RolePermission(BasePermission):
     }
     resource = 'role'
 
-    def __init__(self, action):
-        self.action = action
+    # def __init__(self, action):
+    #     self.action = action
 
-class RoleAssignmentPermission(BasePermission):
+class RoleAssignmentPermission(RBACPermission):
     PERMISSIONS = {
         'role_assignment': {
             'assign': {
@@ -127,5 +131,5 @@ class RoleAssignmentPermission(BasePermission):
     }
     resource = 'role_assignment'
 
-    def __init__(self, action):
-        self.action = action
+    # def __init__(self, action):
+    #     self.action = action

@@ -1,110 +1,121 @@
-from functools import wraps
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import BasePermission
 from accounts.models.customer_account import CustomerAccount
 from accounts.models.employee_account import EmployeeAccount
 from accounts.models.role import ROLES
+from rest_framework.exceptions import PermissionDenied
 
-class BasePermission:
-    """Base class for permission checking."""
-    PERMISSIONS = NotImplemented
-    resource = NotImplemented
-
-    def check_permission(self, request, action, obj=None):
+class RBACPermission(BasePermission):
+    """
+    Base class for role-based access control using DRF's BasePermission.
+    Subclasses should define:
+    - resource: the resource name in PERMISSIONS
+    - PERMISSIONS: the permission structure
+    """
+    resource = None
+    PERMISSIONS = {}
+    
+    def has_permission(self, request, view):
+        """
+        Check if the user has permission to perform the action.
+        Maps to DRF's has_permission method.
+        """
         user = request.user
-
+        action = getattr(view, 'action', None)
+        
+        # If action is not set (for APIView), derive it from HTTP method
+        if action is None:
+            action = self._get_action_from_method(request.method)
+            
         if not user.is_authenticated:
-            raise PermissionDenied("Authentication required.")
-
+            return False
+            
         # Get permission settings for this action
         permission_settings = self.get_permission_settings(action)
         if not permission_settings:
             return False
-
+            
         # Check if user has required role
         allowed_roles = permission_settings.get('roles', [])
         
         # If user is a CustomerAccount, check if CUSTOMER role is allowed
         if isinstance(user, CustomerAccount):
             if ROLES.get('CUSTOMER') in allowed_roles:
-                # If there's an object and an object permission specified, check it
-                if obj and 'object_permission' in permission_settings:
-                    return self.check_object_permission(request, action, obj, permission_settings['object_permission'])
                 return True
-            # If no role access, may still have object-level permission
-            elif obj and 'object_permission' in permission_settings:
-                return self.check_object_permission(request, action, obj, permission_settings['object_permission'])
             return False
         
         # If user is an EmployeeAccount, check roles
         if isinstance(user, EmployeeAccount):
             user_roles = [employee_role.role.id for employee_role in user.roles.all()]
-            print(user_roles)
-            print(allowed_roles)
-            print(permission_settings)
-            print(request.method)
             if set(user_roles) & set(allowed_roles):  # Intersection of sets
-                # If no role access, may still have object-level permission
-                if obj and 'object_permission' in permission_settings:
-                    return self.check_object_permission(request, action, obj, permission_settings['object_permission'])
                 return True
             return False
+            
         return False
+    
+    def has_object_permission(self, request, view, obj):
+        """
+        Check if the user has permission to access the object.
+        Maps to DRF's has_object_permission method.
+        """
 
+        action = getattr(view, 'action', None)
+        
+        # If action is not set (for APIView), derive it from HTTP method
+        if action is None:
+            action = self._get_action_from_method(request.method)
+        
+        # Get permission settings for this action
+        permission_settings = self.get_permission_settings(action)
+        if not permission_settings:
+            return False
+            
+        # If no object permissions specified, rely on has_permission
+        if 'object_permission' not in permission_settings:
+            return True
+            
+        permission_type = permission_settings['object_permission']
+        return self.check_object_permission(request, action, obj, permission_type)
+    
     def get_permission_settings(self, action):
         """Get permission settings for a specific action."""
         return self.PERMISSIONS.get(self.resource, {}).get(action, {})
     
     def check_object_permission(self, request, action, obj, permission_type):
-        """
-        Check object-level permissions.
-        Supports single permissions or lists of permissions.
-        """
+        """Check object-level permissions."""
         # Handle multiple permissions (all must pass)
         if isinstance(permission_type, list):
             errors = []
             for permission in permission_type:
                 try:
-                    # Try the permission check
                     result = self._check_single_permission(request, action, obj, permission)
                     if not result:
                         errors.append(f"Permission check '{permission}' failed.")
                 except PermissionDenied as e:
-                    # Collect the specific error message
                     errors.append(str(e))
                     
-            # If any errors were collected, raise PermissionDenied with all messages
             if errors:
                 raise PermissionDenied("; ".join(errors))
             
-            # All permissions passed
             return True
         
         # Handle single permission
         return self._check_single_permission(request, action, obj, permission_type)
-        
-
+    
     def _check_single_permission(self, request, action, obj, permission_type):
         """Check a single object-level permission."""
-        # Special permission handler - call methods directly if they exist
         if hasattr(self, permission_type):
-            # Call the method with the same name as permission_type
             permission_method = getattr(self, permission_type)
             return permission_method(request, obj)
         
         return False
-
-def has_permission(permission_checker):
-    """Decorator that uses a PermissionChecker instance."""
-    def decorator(view_func):
-        @wraps(view_func)
-        def _wrapped_view(instance, request, *args, **kwargs):
-            obj = None
-            if 'pk' in kwargs:
-                obj = instance.get_object()  # Get object *before* permission check
-
-            if permission_checker.check_permission(request, permission_checker.action, obj):
-                return view_func(instance, request, *args, **kwargs)
-            else:
-                raise PermissionDenied("You do not have permission.")
-        return _wrapped_view
-    return decorator
+    
+    def _get_action_from_method(self, method):
+        """Convert HTTP method to action name."""
+        method_map = {
+            'GET': 'retrieve' if 'pk' in request.parser_context.get('kwargs', {}) else 'list',
+            'POST': 'create',
+            'PUT': 'update',
+            'PATCH': 'partial_update',
+            'DELETE': 'destroy'
+        }
+        return method_map.get(method, 'retrieve')

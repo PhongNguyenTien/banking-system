@@ -7,38 +7,17 @@ from django.contrib.auth import authenticate
 
 from ..serializers.employee_account import EmployeeAccountCreateSerializer, EmployeeAccountSerializer
 from ..serializers.login import EmployeeLoginSerializer
-from common.permissions.base_permissions import has_permission
 from accounts.rbac import EmployeeAccountPermission
 
 class EmployeeAccountViewSet(viewsets.ModelViewSet):
     queryset = EmployeeAccount.objects.all()
+    permission_classes = [EmployeeAccountPermission]
 
     def get_serializer_class(self):
         if self.action == 'create':
             return EmployeeAccountCreateSerializer
         return EmployeeAccountSerializer
 
-    @has_permission(EmployeeAccountPermission('list'))
-    def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
-
-    @has_permission(EmployeeAccountPermission('create'))
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-    @has_permission(EmployeeAccountPermission('retrieve'))
-    def retrieve(self, request, *args, **kwargs):
-        return super().retrieve(request, *args, **kwargs)
-
-    @has_permission(EmployeeAccountPermission('update'))
-    def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
-
-    @has_permission(EmployeeAccountPermission('destroy'))
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.is_active = False
