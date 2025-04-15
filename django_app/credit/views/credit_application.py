@@ -9,7 +9,7 @@ from credit.rbac import CreditApplicationPermission
 from accounts.models.role import Role
 
 class CreditApplicationViewSet(viewsets.ModelViewSet):
-    permission_classes = []
+    permission_classes = [CreditApplicationPermission]
     
     def get_queryset(self):
         user = self.request.user
